@@ -1,0 +1,6 @@
+@Codprinter.WebApi_HostAddress = http://localhost:5228
+
+GET {{Codprinter.WebApi_HostAddress}}/weatherforecast/
+Accept: application/json
+
+###
