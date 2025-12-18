@@ -22,6 +22,16 @@ namespace Codprinter.Labels.DataContexts.EFCore.Services
         public async Task<LabelTemplate?> GetTemplateByNameAsync(string templateName)
         => await LabelTemplates.AsNoTracking().FirstOrDefaultAsync(t => t.TemplateName == templateName);
 
+        public async Task<List<LabelTemplate>> GetAllTemplatesAsync(bool onlyActive)
+        {
+            var query = LabelTemplates.AsNoTracking().AsQueryable();
+            if (onlyActive)
+            {
+                query = query.Where(t => t.IsActive);
+            }
+            return await query.ToListAsync();
+        }
+
         public async Task<List<LabelVariable>> GetVariablesByTemplateIdAsync(Guid templateId)
         => await LabelVariables.AsNoTracking().Where(v => v.LabelTemplateId == templateId).ToListAsync();
 

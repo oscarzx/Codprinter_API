@@ -1,8 +1,8 @@
 using Codprinter.Labels.Application.Interfaces.Repositories;
 using Codprinter.Labels.Application.POCOAggregates;
 using Codprinter.Labels.Application.POCOEntities;
-using Codprinter.Labels.Domain;
 using Codprinter.Labels.InterfaceAdapters.Gateways.Interfaces;
+using Codprinter.Labels.Domain;
 using DomainBinding = Codprinter.Labels.Domain.DataBinding;
 using PocoBinding = Codprinter.Labels.Application.POCOEntities.DataBinding;
 
@@ -133,6 +133,22 @@ namespace Codprinter.Labels.InterfaceAdapters.Gateways.Repositories
                 domainAssets);
 
             return entity;
+        }
+
+        public async Task<IReadOnlyList<LabelTemplateSummary>> GetAllSummariesAsync(bool onlyActive)
+        {
+            var templates = await dataContext.GetAllTemplatesAsync(onlyActive);
+            return templates
+                .Select(t => new LabelTemplateSummary(
+                    t.Id,
+                    t.TemplateName,
+                    t.Description,
+                    t.Dpi,
+                    t.Units,
+                    t.Width,
+                    t.Height,
+                    t.IsActive))
+                .ToList();
         }
 
         public async Task SaveChanges() => await dataContext.SaveChangesAsync();

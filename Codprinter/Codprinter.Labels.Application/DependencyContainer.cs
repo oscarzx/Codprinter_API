@@ -1,5 +1,6 @@
 ﻿using Codprinter.Labels.Application.Interfaces.CreateLabel;
 using Codprinter.Labels.Application.Interfaces.GetLabel;
+using Codprinter.Labels.Application.Interfaces.GetAllLabels;
 using Codprinter.Labels.Application.UsesCases;
 using Microsoft.Extensions.DependencyInjection;
 
@@ -11,6 +12,7 @@ public static class DependencyContainer
     {
         services.AddScoped<ICreateLabelInputPort, CreateLabelInteractor>();
         services.AddScoped<IGetLabelInputPort, GetLabelInteractor>();
+        services.AddScoped<IGetAllLabelsInputPort, GetAllLabelsInteractor>();
 
         return services;
     }

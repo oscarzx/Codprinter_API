@@ -15,6 +15,7 @@ namespace Codprinter.Labels.InterfaceAdapters.Gateways.Interfaces
 
         // Queries
         Task<LabelTemplate?> GetTemplateByNameAsync(string templateName);
+        Task<List<LabelTemplate>> GetAllTemplatesAsync(bool onlyActive);
         Task<List<LabelVariable>> GetVariablesByTemplateIdAsync(Guid templateId);
         Task<List<DataBinding>> GetBindingsByVariableIdsAsync(IEnumerable<Guid> variableIds);
         Task<List<LabelElements>> GetElementsByTemplateIdAsync(Guid templateId);

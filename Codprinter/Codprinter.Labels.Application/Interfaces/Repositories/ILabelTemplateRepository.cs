@@ -1,6 +1,6 @@
 using Codprinter.Labels.Application.POCOAggregates;
-using Codprinter.Shared.Application.UnitOfWork;
 using Codprinter.Labels.Domain;
+using Codprinter.Shared.Application.UnitOfWork;
 
 namespace Codprinter.Labels.Application.Interfaces.Repositories
 {
@@ -9,5 +9,7 @@ namespace Codprinter.Labels.Application.Interfaces.Repositories
         Task AddAsync(LabelTemplateAggregate aggregate);
 
         Task<LabelEntity?> GetByTemplateNameAsync(string templateName);
+
+        Task<IReadOnlyList<LabelTemplateSummary>> GetAllSummariesAsync(bool onlyActive);
     }
 }

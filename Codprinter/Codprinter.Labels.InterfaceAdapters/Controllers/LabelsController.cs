@@ -1,6 +1,8 @@
 ﻿using Codprinter.Labels.Application.Dtos.CreateLabel;
+using Codprinter.Labels.Application.Dtos.GetAllLabels;
 using Codprinter.Labels.Application.Dtos.GetLabel;
 using Codprinter.Labels.Application.Interfaces.CreateLabel;
+using Codprinter.Labels.Application.Interfaces.GetAllLabels;
 using Codprinter.Labels.Application.Interfaces.GetLabel;
 using Codprinter.Labels.Domain.ValueObjects;
 using Codprinter.Labels.InterfaceAdapters.Presenters;
@@ -14,14 +16,17 @@ public static class LabelsController
 {
     public static WebApplication UseLabelController(this WebApplication app)
     {
-        //app.MapGet("/labels/{labelId}", () => "Label details");
+        // Existing endpoints
         app.MapPost(Endpoints.CreateLabel, CreateLabel).WithTags("Labels");
         app.MapGet(Endpoints.GetLabelByName, GetLabelByName).WithTags("Labels");
+
+        // New list endpoint (uses GetLabelTemplates constant)
+        app.MapGet(Endpoints.GetLabelTemplates, GetAllLabels).WithTags("Labels");
 
         return app;
     }
 
-    public static  async Task<CreateLabelResponse> CreateLabel(
+    public static async Task<CreateLabelResponse> CreateLabel(
         [FromBody] CreateLabelRequest request,
         ICreateLabelInputPort inputPort,
         ICreateLabelOutputPort outputPort)
@@ -42,6 +47,23 @@ public static class LabelsController
         if (presenter.Content is null)
         {
             return Results.NotFound();
+        }
+
+        return Results.Ok(presenter.Content);
+    }
+
+    private static async Task<IResult> GetAllLabels(
+        [FromQuery] bool onlyActive,
+        IGetAllLabelsInputPort inputPort,
+        IGetAllLabelsOutputPort outputPort)
+    {
+        var request = new GetAllLabelsRequest { OnlyActive = onlyActive };
+        await inputPort.Handle(request);
+
+        var presenter = (GetAllLabelsPresenter)outputPort;
+        if (presenter.Content is null)
+        {
+            return Results.Ok(new GetAllLabelsResponse());
         }
 
         return Results.Ok(presenter.Content);
