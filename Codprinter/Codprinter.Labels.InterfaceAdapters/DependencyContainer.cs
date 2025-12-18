@@ -1,4 +1,5 @@
 ﻿using Codprinter.Labels.Application.Interfaces.CreateLabel;
+using Codprinter.Labels.Application.Interfaces.GetLabel;
 using Codprinter.Labels.Application.Interfaces.Repositories;
 using Codprinter.Labels.InterfaceAdapters.Gateways.Repositories;
 using Codprinter.Labels.InterfaceAdapters.Presenters;
@@ -16,6 +17,7 @@ namespace Codprinter.Labels.InterfaceAdapters
 
             // Presenters
             services.AddScoped<ICreateLabelOutputPort, CreateLabelPresenter>();
+            services.AddScoped<IGetLabelOutputPort, GetLabelPresenter>();
             return services;
         }
     }

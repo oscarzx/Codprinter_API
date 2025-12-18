@@ -50,7 +50,7 @@ public class LabelEntity
         RawJson = string.Empty;
     }
 
-    // Factory with full validation
+    // Factory with full validation for create use case
     public static LabelEntity Create(
     Guid id,
     string name,
@@ -67,7 +67,80 @@ public class LabelEntity
     IEnumerable<LabelElement>? elements,
     IEnumerable<AssetRef>? assets)
     {
-        // Template validations
+        var entity = new LabelEntity();
+        entity.SetTemplateCore(id, name, description, dpi, units, widthMm, heightMm, rawJson, elementsJson, isActive, createdByUserId);
+        entity.AttachCollections(variables, elements, assets);
+        return entity;
+    }
+
+    // Factory to reconstruct from persistence for query use case
+    public static LabelEntity FromPersistence(
+    Guid id,
+    string name,
+    string? description,
+    int dpi,
+    string units,
+    decimal widthMm,
+    decimal heightMm,
+    string rawJson,
+    string? elementsJson,
+    bool isActive,
+    Guid? createdByUserId,
+    IEnumerable<LabelVariable> variables,
+    IEnumerable<DataBinding> bindings,
+    IEnumerable<LabelElement> elements,
+    IEnumerable<AssetRef> assets)
+    {
+        if (!isActive)
+            throw new InvalidLabelException("label.inactive", $"Label template '{name}' is inactive");
+
+        var entity = new LabelEntity();
+        entity.SetTemplateCore(id, name, description, dpi, units, widthMm, heightMm, rawJson, elementsJson, isActive, createdByUserId);
+
+        // Rebuild variable graph with bindings
+        var variableList = variables?.ToList() ?? new List<LabelVariable>();
+        var bindingsLookup = bindings?.GroupBy(b => b.LabelVariableId).ToDictionary(g => g.Key, g => g.ToList())
+        ?? new Dictionary<Guid, List<DataBinding>>();
+
+        foreach (var variable in variableList)
+        {
+            if (bindingsLookup.TryGetValue(variable.Id, out var variableBindings) && variableBindings.Count > 0)
+            {
+                // Domain permite solo un binding por variable; tomamos el primero
+                var b = variableBindings[0];
+                variable.DataBinding = new DataBinding
+                {
+                    Id = b.Id,
+                    LabelVariableId = b.LabelVariableId,
+                    ConnectionName = b.ConnectionName,
+                    QueryType = b.QueryType,
+                    TableName = b.TableName,
+                    ColumnName = b.ColumnName,
+                    SqlQuery = b.SqlQuery,
+                    KeyMappingJson = b.KeyMappingJson,
+                    CacheTtlSeconds = b.CacheTtlSeconds
+                };
+            }
+        }
+
+        entity.AttachCollections(variableList, elements, assets);
+        return entity;
+    }
+
+    private void SetTemplateCore(
+    Guid id,
+    string name,
+    string? description,
+    int dpi,
+    string units,
+    decimal widthMm,
+    decimal heightMm,
+    string rawJson,
+    string? elementsJson,
+    bool isActive,
+    Guid? createdByUserId)
+    {
+        // Template validations shared by create/query factories
         if (string.IsNullOrWhiteSpace(name))
             throw new InvalidLabelException("label.name.required", "Template name is required");
         var normName = name.Trim();
@@ -84,20 +157,27 @@ public class LabelEntity
 
         if (string.IsNullOrWhiteSpace(rawJson)) throw new InvalidLabelException("label.rawjson.required", "RawJson is required");
 
-        var entity = new LabelEntity
-        {
-            Id = id == Guid.Empty ? Guid.NewGuid() : id,
-            Name = normName,
-            Description = string.IsNullOrWhiteSpace(description) ? null : description,
-            Dpi = dpi,
-            Units = units,
-            WidthMm = widthMm,
-            HeightMm = heightMm,
-            RawJson = rawJson,
-            ElementsJson = string.IsNullOrWhiteSpace(elementsJson) ? null : elementsJson,
-            IsActive = isActive,
-            CreatedByUserId = createdByUserId,
-        };
+        Id = id == Guid.Empty ? Guid.NewGuid() : id;
+        Name = normName;
+        Description = string.IsNullOrWhiteSpace(description) ? null : description;
+        Dpi = dpi;
+        Units = units;
+        WidthMm = widthMm;
+        HeightMm = heightMm;
+        RawJson = rawJson;
+        ElementsJson = string.IsNullOrWhiteSpace(elementsJson) ? null : elementsJson;
+        IsActive = isActive;
+        CreatedByUserId = createdByUserId;
+    }
+
+    private void AttachCollections(
+    IEnumerable<LabelVariable>? variables,
+    IEnumerable<LabelElement>? elements,
+    IEnumerable<AssetRef>? assets)
+    {
+        _variables.Clear();
+        _elements.Clear();
+        _assets.Clear();
 
         // Variables validations
         if (variables != null)
@@ -111,7 +191,7 @@ public class LabelEntity
             {
                 v.Validate();
             }
-            entity._variables.AddRange(list);
+            _variables.AddRange(list);
         }
 
         // Assets
@@ -122,7 +202,7 @@ public class LabelEntity
             {
                 a.Validate();
             }
-            entity._assets.AddRange(assetList);
+            _assets.AddRange(assetList);
         }
 
         // Elements validations
@@ -135,25 +215,25 @@ public class LabelEntity
                 // If element refers to variable by name, ensure it exists
                 if (!string.IsNullOrWhiteSpace(e.LabelVariableName))
                 {
-                    if (!entity._variables.Any(v => v.Name == e.LabelVariableName))
+                    if (!_variables.Any(v => v.Name == e.LabelVariableName))
                         throw new InvalidLabelException("element.variable.not_found", $"Element references unknown variable '{e.LabelVariableName}'");
                 }
                 // If element refers to an asset, ensure present in assets list
                 if (e.AssetId.HasValue)
                 {
-                    if (!entity._assets.Any(a => a.AssetId == e.AssetId.Value))
-                        throw new InvalidLabelException("element asset not_found", $"Element references unknown asset '{e.AssetId}'");
+                    if (!_assets.Any(a => a.AssetId == e.AssetId.Value))
+                        throw new InvalidLabelException("element.asset.not_found", $"Element references unknown asset '{e.AssetId}'");
                 }
             }
-            entity._elements.AddRange(elList);
+            _elements.AddRange(elList);
         }
-
-        return entity;
     }
 }
 
 public class LabelVariable
 {
+    public Guid Id { get; set; }
+    public Guid LabelTemplateId { get; set; }
     public string Name { get; set; } = string.Empty;
     public string DisplayName { get; set; } = string.Empty;
     public string DataType { get; set; } = string.Empty; // 'string','number','date','bool','json'
@@ -188,6 +268,8 @@ public class LabelVariable
 
 public class DataBinding
 {
+    public Guid Id { get; set; }
+    public Guid LabelVariableId { get; set; }
     public string ConnectionName { get; set; } = string.Empty;
     public string QueryType { get; set; } = string.Empty; // 'table','view','sql'
     public string? TableName { get; set; }
@@ -219,6 +301,8 @@ public class DataBinding
 
 public class LabelElement
 {
+    public Guid Id { get; set; }
+    public Guid LabelTemplateId { get; set; }
     public string Type { get; set; } = string.Empty; // 'text','image','rect','barcode','qrcode'
     public decimal Xmm { get; set; }
     public decimal Ymm { get; set; }

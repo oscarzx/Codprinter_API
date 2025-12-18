@@ -3,4 +3,6 @@
 public class Endpoints
 {
     public const string CreateLabel = $"{nameof(CreateLabel)}";
+    public const string GetLabelByName = $"{nameof(GetLabelByName)}";
+    public const string GetLabelTemplates = $"{nameof(GetLabelTemplates)}";
 }
