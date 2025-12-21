@@ -1,9 +1,13 @@
 ﻿using Codprinter.Labels.Application.Dtos.CreateLabel;
+using Codprinter.Labels.Application.Dtos.DeleteLabel;
 using Codprinter.Labels.Application.Dtos.GetAllLabels;
 using Codprinter.Labels.Application.Dtos.GetLabel;
+using Codprinter.Labels.Application.Dtos.UpdateLabel;
 using Codprinter.Labels.Application.Interfaces.CreateLabel;
+using Codprinter.Labels.Application.Interfaces.DeleteLabel;
 using Codprinter.Labels.Application.Interfaces.GetAllLabels;
 using Codprinter.Labels.Application.Interfaces.GetLabel;
+using Codprinter.Labels.Application.Interfaces.UpdateLabel;
 using Codprinter.Labels.Domain.ValueObjects;
 using Codprinter.Labels.InterfaceAdapters.Presenters;
 using Microsoft.AspNetCore.Builder;
@@ -22,6 +26,12 @@ public static class LabelsController
 
         // New list endpoint (uses GetLabelTemplates constant)
         app.MapGet(Endpoints.GetLabelTemplates, GetAllLabels).WithTags("Labels");
+
+        // Update endpoint uses POST as requested
+        app.MapPost(Endpoints.UpdateLabelTemplate, UpdateLabel).WithTags("Labels");
+
+        // Delete endpoint (borrado lógico por nombre de plantilla)
+        app.MapDelete(Endpoints.DeleteLabelTemplate, DeleteLabel).WithTags("Labels");
 
         return app;
     }
@@ -66,6 +76,28 @@ public static class LabelsController
             return Results.Ok(new GetAllLabelsResponse());
         }
 
+        return Results.Ok(presenter.Content);
+    }
+
+    private static async Task<IResult> UpdateLabel(
+        [FromBody] UpdateLabelRequest request,
+        IUpdateLabelInputPort inputPort,
+        IUpdateLabelOutputPort outputPort)
+    {
+        await inputPort.Handle(request);
+        var presenter = (UpdateLabelPresenter)outputPort;
+        return Results.Ok(presenter.Content ?? new UpdateLabelResponse());
+    }
+
+    private static async Task<IResult> DeleteLabel(
+        [AsParameters] DeleteLabelRequest request,
+        IDeleteLabelInputPort inputPort,
+        IDeleteLabelOutputPort outputPort)
+    {
+        //var request = new DeleteLabelRequest { TemplateName = templateName };
+        await inputPort.Handle(request);
+
+        var presenter = (DeleteLabelPresenter)outputPort;
         return Results.Ok(presenter.Content);
     }
 }

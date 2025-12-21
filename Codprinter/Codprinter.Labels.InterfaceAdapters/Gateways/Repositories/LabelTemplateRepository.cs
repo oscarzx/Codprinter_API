@@ -1,8 +1,8 @@
 using Codprinter.Labels.Application.Interfaces.Repositories;
 using Codprinter.Labels.Application.POCOAggregates;
 using Codprinter.Labels.Application.POCOEntities;
-using Codprinter.Labels.InterfaceAdapters.Gateways.Interfaces;
 using Codprinter.Labels.Domain;
+using Codprinter.Labels.InterfaceAdapters.Gateways.Interfaces;
 using DomainBinding = Codprinter.Labels.Domain.DataBinding;
 using PocoBinding = Codprinter.Labels.Application.POCOEntities.DataBinding;
 
@@ -30,6 +30,28 @@ namespace Codprinter.Labels.InterfaceAdapters.Gateways.Repositories
             if (aggregate.Elements.Count > 0)
             {
                 await dataContext.AddElementsAsync(aggregate.Elements);
+            }
+        }
+
+        public async Task UpdateAsync(LabelTemplateAggregate aggregate)
+        {
+            // Use explicit update operations so EF can track existing entities by Id
+            await dataContext.UpdateTemplateAsync(aggregate.Template);
+            if (aggregate.Assets.Count > 0)
+            {
+                await dataContext.UpdateAssetsAsync(aggregate.Assets);
+            }
+            if (aggregate.Variables.Count > 0)
+            {
+                await dataContext.UpdateVariablesAsync(aggregate.Variables);
+            }
+            if (aggregate.DataBindings.Count > 0)
+            {
+                await dataContext.UpdateDataBindingsAsync(aggregate.DataBindings);
+            }
+            if (aggregate.Elements.Count > 0)
+            {
+                await dataContext.UpdateElementsAsync(aggregate.Elements);
             }
         }
 
@@ -149,6 +171,11 @@ namespace Codprinter.Labels.InterfaceAdapters.Gateways.Repositories
                     t.Height,
                     t.IsActive))
                 .ToList();
+        }
+
+        public async Task DeleteByNameAsync(string templateName)
+        {
+            await dataContext.DeleteTemplateByNameAsync(templateName);
         }
 
         public async Task SaveChanges() => await dataContext.SaveChangesAsync();

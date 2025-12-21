@@ -50,6 +50,18 @@ public class LabelEntity
         RawJson = string.Empty;
     }
 
+    // Método de dominio para realizar un borrado lógico
+    public void Delete()
+    {
+        if (!IsActive)
+        {
+            // Idempotente: si ya está inactiva, no hacemos nada
+            return;
+        }
+
+        IsActive = false;
+    }
+
     // Factory with full validation for create use case
     public static LabelEntity Create(
     Guid id,
@@ -127,6 +139,37 @@ public class LabelEntity
         return entity;
     }
 
+    // New: update the whole template (size, json, etc.)
+    public void UpdateTemplate(UpdateLabelTemplateData data)
+    {
+        if (data is null)
+            throw new InvalidLabelException("label.update.null", "Update data is required");
+
+        // Reuse core validation; keep Id and CreatedByUserId
+        SetTemplateCore(
+            id: Id,
+            name: data.Name,
+            description: data.Description,
+            dpi: data.Dpi,
+            units: data.Units,
+            widthMm: data.WidthMm,
+            heightMm: data.HeightMm,
+            rawJson: data.RawJson,
+            elementsJson: data.ElementsJson,
+            isActive: data.IsActive,
+            createdByUserId: CreatedByUserId);
+        // Note: if you later add UpdatedAt/UpdatedBy, you can set them here.
+    }
+
+    // New: replace full collections when user edits entire label
+    public void ReplaceCollections(
+        IEnumerable<LabelVariable>? variables,
+        IEnumerable<LabelElement>? elements,
+        IEnumerable<AssetRef>? assets)
+    {
+        AttachCollections(variables, elements, assets);
+    }
+
     private void SetTemplateCore(
     Guid id,
     string name,
@@ -179,7 +222,7 @@ public class LabelEntity
         _elements.Clear();
         _assets.Clear();
 
-        // Variables validations
+        // Variables validations (flexible: sólo cuando hay variables)
         if (variables != null)
         {
             var list = variables.ToList();
@@ -194,7 +237,7 @@ public class LabelEntity
             _variables.AddRange(list);
         }
 
-        // Assets
+        // Assets (opcional)
         if (assets != null)
         {
             var assetList = assets.ToList();
@@ -205,7 +248,7 @@ public class LabelEntity
             _assets.AddRange(assetList);
         }
 
-        // Elements validations
+        // Elements validations (muy flexibles)
         if (elements != null)
         {
             var elList = elements.ToList();
@@ -218,8 +261,8 @@ public class LabelEntity
                     if (!_variables.Any(v => v.Name == e.LabelVariableName))
                         throw new InvalidLabelException("element.variable.not_found", $"Element references unknown variable '{e.LabelVariableName}'");
                 }
-                // If element refers to an asset, ensure present in assets list
-                if (e.AssetId.HasValue)
+                // If element refers to an asset, ensure present in assets list (ignore empty Guid)
+                if (e.AssetId.HasValue && e.AssetId.Value != Guid.Empty)
                 {
                     if (!_assets.Any(a => a.AssetId == e.AssetId.Value))
                         throw new InvalidLabelException("element.asset.not_found", $"Element references unknown asset '{e.AssetId}'");
@@ -247,14 +290,22 @@ public class LabelVariable
 
     public void Validate()
     {
+        // Validaciones flexibles: sólo cuando realmente se declara una variable
         if (string.IsNullOrWhiteSpace(Name)) throw new InvalidLabelException("variable.name.required", "Variable name is required");
         if (string.IsNullOrWhiteSpace(DisplayName)) throw new InvalidLabelException("variable.display_name.required", "Variable display name is required");
 
-        var allowedDataTypes = new[] { "string", "number", "date", "bool", "json" };
-        if (!allowedDataTypes.Contains(DataType)) throw new InvalidLabelException("variable.data_type.invalid", "Invalid variable data type");
+        // DataType y SourceType se validan sólo si se proporcionan
+        if (!string.IsNullOrWhiteSpace(DataType))
+        {
+            var allowedDataTypes = new[] { "string", "number", "date", "bool", "json" };
+            if (!allowedDataTypes.Contains(DataType)) throw new InvalidLabelException("variable.data_type.invalid", "Invalid variable data type");
+        }
 
-        var allowedSourceTypes = new[] { "user", "database", "calculated", "constant", "api", "realtime" };
-        if (!allowedSourceTypes.Contains(SourceType)) throw new InvalidLabelException("variable.source_type.invalid", "Invalid variable source type");
+        if (!string.IsNullOrWhiteSpace(SourceType))
+        {
+            var allowedSourceTypes = new[] { "user", "database", "calculated", "constant", "api", "realtime" };
+            if (!allowedSourceTypes.Contains(SourceType)) throw new InvalidLabelException("variable.source_type.invalid", "Invalid variable source type");
+        }
 
         if (SourceType == "database" && DataBinding == null)
             throw new InvalidLabelException("variable.database.binding.required", "Database variables require a data binding");
@@ -280,9 +331,9 @@ public class DataBinding
 
     public void Validate()
     {
+        // Reglas mínimas para evitar configuraciones claramente inválidas
         if (string.IsNullOrWhiteSpace(ConnectionName)) throw new InvalidLabelException("binding.connection_name.required", "ConnectionName is required");
-        var allowedQueryTypes = new[] { "table", "view", "sql" };
-        if (!allowedQueryTypes.Contains(QueryType)) throw new InvalidLabelException("binding.query_type.invalid", "QueryType must be 'table','view' or 'sql'");
+        if (string.IsNullOrWhiteSpace(QueryType)) throw new InvalidLabelException("binding.query_type.required", "QueryType is required");
 
         if (QueryType is "table" or "view")
         {
@@ -319,19 +370,20 @@ public class LabelElement
     {
         var allowedTypes = new[] { "text", "image", "rect", "barcode", "qrcode" };
         if (!allowedTypes.Contains(Type)) throw new InvalidLabelException("element.type.invalid", "Invalid element type");
-        if (Xmm < 0 || Ymm < 0) throw new InvalidLabelException("element.position.invalid", "Element position must be >=0");
-        if (RotationDeg is < -360 or > 360) throw new InvalidLabelException("element.rotation.invalid", "Rotation must be between -360 and360");
-        if (ZIndex < 0) throw new InvalidLabelException("element.zindex.invalid", "ZIndex must be >=0");
-        if (string.IsNullOrWhiteSpace(PropsJson)) throw new InvalidLabelException("element.props.required", "PropsJson is required");
 
-        // dimensional checks when provided
+        // Validaciones flexibles: aceptamos cualquier coordenada/rotación/ZIndex
+
+        // PropsJson: sólo exigimos que no sea null; vacío se permite.
+        if (PropsJson is null)
+            throw new InvalidLabelException("element.props.required", "PropsJson is required");
+
+        // Dimensiones: si llegan <=0 las dejamos como null, no lanzamos error.
         if (WidthMm is <= 0) WidthMm = null;
         if (HeightMm is <= 0) HeightMm = null;
 
+        // Imagen: única regla fuerte, requiere un asset asociado.
         if (Type == "image" && !AssetId.HasValue)
             throw new InvalidLabelException("element.image.asset.required", "Image element requires an AssetId");
-        if ((Type == "text" || Type == "barcode" || Type == "qrcode") && string.IsNullOrWhiteSpace(LabelVariableName))
-            throw new InvalidLabelException("element.variable.required", "Text/Barcode/QRCode elements must reference a variable");
     }
 }
 
@@ -348,9 +400,9 @@ public class AssetRef
 
     public void Validate()
     {
+        // Muy flexible: si no se envía Asset, no se valida nada.
         if (AssetId == Guid.Empty) AssetId = Guid.NewGuid();
-        var allowedTypes = new[] { "image", "font" };
-        if (!allowedTypes.Contains(Type)) throw new InvalidLabelException("asset.type.invalid", "Invalid asset type");
+        if (string.IsNullOrWhiteSpace(Type)) throw new InvalidLabelException("asset.type.required", "Asset type is required");
         if (string.IsNullOrWhiteSpace(Name)) throw new InvalidLabelException("asset.name.required", "Asset name is required");
         if (string.IsNullOrWhiteSpace(MimeType)) throw new InvalidLabelException("asset.mimetype.required", "Asset mime type is required");
         if (BinaryData == null || BinaryData.Length == 0) throw new InvalidLabelException("asset.binary.required", "Asset binary data is required");
