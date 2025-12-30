@@ -1,0 +1,15 @@
+﻿<Project Sdk="Microsoft.NET.Sdk">
+
+  <PropertyGroup>
+    <TargetFramework>net8.0</TargetFramework>
+    <ImplicitUsings>enable</ImplicitUsings>
+    <Nullable>enable</Nullable>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="..\Codprinter.Products.Application\Codprinter.Products.Application.csproj" />
+    <ProjectReference Include="..\Codprinter.Products.DataContext.EFCore\Codprinter.Products.DataContext.EFCore.csproj" />
+    <ProjectReference Include="..\Codprinter.Products.InterfacesAdapters\Codprinter.Products.InterfacesAdapters.csproj" />
+  </ItemGroup>
+
+</Project>

@@ -2,7 +2,6 @@
 using Codprinter.Labels.Application.Interfaces.CreateLabel;
 using Codprinter.Labels.Application.Interfaces.Repositories;
 using Codprinter.Labels.Application.Mappers;
-using Codprinter.Labels.Domain;
 
 namespace Codprinter.Labels.Application.UsesCases;
 
@@ -24,6 +23,6 @@ internal class CreateLabelInteractor(
         {
             Message = "Etiqueta creada correctamente.",
         };
-        outputPort.Handle(response);
+        await outputPort.Handle(response);
     }
 }

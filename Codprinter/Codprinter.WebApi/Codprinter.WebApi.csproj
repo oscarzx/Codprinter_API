@@ -13,6 +13,10 @@
 
   <ItemGroup>
     <ProjectReference Include="..\Codprinter.Labels.IoC\Codprinter.Labels.IoC.csproj" />
+    <ProjectReference Include="..\Codprinter.Printers.IoC\Codprinter.Printers.IoC.csproj" />
+    <ProjectReference Include="..\Codprinter.Products.IoC\Codprinter.Products.IoC.csproj" />
+    <ProjectReference Include="..\Codprinter.WeighingScales.IoC\Codprinter.WeighingScales.IoC.csproj" />
+    <ProjectReference Include="..\Codprinter.Printing.IoC\Codprinter.Printing.IoC.csproj" />
   </ItemGroup>
 
 </Project>

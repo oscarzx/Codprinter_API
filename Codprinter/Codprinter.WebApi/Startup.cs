@@ -1,5 +1,9 @@
 ﻿using Codprinter.Labels.IoC;
+using Codprinter.Printers.IoC;
+using Codprinter.Products.IoC;
+using Codprinter.Printing.IoC;
 using Codprinter.Shared.Infrastructure.Options;
+using Codprinter.WeighingScales.IoC;
 
 namespace Codprinter.WebApi;
 
@@ -18,7 +22,24 @@ public static class Startup
                 builder.Configuration,
                 options => 
                 builder.Configuration.GetSection(DBOptions.SectionKey)
-                .Bind(options));
+                .Bind(options))
+            .AddPrinterServices(
+                builder.Configuration,
+                options =>
+                builder.Configuration.GetSection(DBOptions.SectionKey)
+                .Bind(options))
+            .AddProductServices(
+                builder.Configuration,
+                options =>
+                builder.Configuration.GetSection(DBOptions.SectionKey)
+                .Bind(options))
+            .AddWeighingScaleServices(
+                builder.Configuration,
+                options => 
+                builder.Configuration.GetSection(DBOptions.SectionKey)
+                .Bind(options))
+            .AddPrintingServices();
+
 
         builder.Services.AddCors(options =>
         {
@@ -41,6 +62,9 @@ public static class Startup
             app.UseSwaggerUI();
         }
 
+        app.UseSwagger();
+        app.UseSwaggerUI();
+
         app.UseMiddleware<Middlewares.ExceptionHandlingMiddleware>();
 
         app.UseHttpsRedirection();
@@ -50,6 +74,10 @@ public static class Startup
         //Autorización
 
         app.MapCodprinterLabelsEndpoints();
+        app.MapCodprinterPrintersEndpoints();
+        app.MapCodprinterProductsEndpoints();
+        app.MapCodprinterWeighingScalesEndpoints();
+        app.MapCodprinterPrintingEndpoints();
 
         return app;
     }
