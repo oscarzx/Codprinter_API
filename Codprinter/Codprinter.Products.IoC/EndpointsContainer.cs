@@ -8,6 +8,7 @@ public static class EndpointsContainer
     public static WebApplication MapCodprinterProductsEndpoints(this WebApplication app)
     {
         app.UseProductsController();
+        app.UseProductSitesController();
         return app;
     }
 }

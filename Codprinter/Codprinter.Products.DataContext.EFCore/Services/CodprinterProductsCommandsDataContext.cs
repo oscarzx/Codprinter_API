@@ -37,6 +37,61 @@ namespace Codprinter.Products.DataContext.EFCore.Services
             return Task.CompletedTask;
         }
 
+        public Task AddProductSiteAsync(ProductSite productSite)
+            => AddAsync(productSite).AsTask();
+
+        public Task<bool> ExistsProductSiteAsync(string site, string productCode)
+            => ProductSites.AnyAsync(ps => ps.Site == site && ps.ProductCode == productCode);
+
+        public async Task<List<ProductSite>> GetAllProductSitesAsync()
+            => await ProductSites
+                .AsNoTracking()
+                .OrderBy(ps => ps.Site)
+                .ThenBy(ps => ps.ProductCode)
+                .ToListAsync();
+
+        public async Task<List<ProductSite>> SearchProductSitesByProductNameAsync(string searchText)
+        {
+            var term = (searchText ?? string.Empty).Trim();
+            if (term.Length == 0)
+                return new List<ProductSite>();
+
+            return await ProductSites
+                .AsNoTracking()
+                .Where(ps => ps.ProductName != null && EF.Functions.ILike(ps.ProductName, $"%{term}%"))
+                .OrderBy(ps => ps.Site)
+                .ThenBy(ps => ps.ProductName)
+                .ToListAsync();
+        }
+
+        public async Task<List<ProductSite>> GetProductSitesByProductCodeAsync(string productCode)
+        {
+            var code = (productCode ?? string.Empty).Trim();
+            if (code.Length == 0)
+                return new List<ProductSite>();
+
+            return await ProductSites
+                .AsNoTracking()
+                .Where(ps => ps.ProductCode == code)
+                .OrderBy(ps => ps.Site)
+                .ToListAsync();
+        }
+
+        public Task<ProductSite?> GetProductSiteByIdAsync(Guid id)
+            => ProductSites.FirstOrDefaultAsync(ps => ps.Id == id);
+
+        public Task UpdateProductSiteAsync(ProductSite productSite)
+        {
+            ProductSites.Update(productSite);
+            return Task.CompletedTask;
+        }
+
+        public Task DeleteProductSiteAsync(ProductSite productSite)
+        {
+            ProductSites.Remove(productSite);
+            return Task.CompletedTask;
+        }
+
         public async Task SaveChangesAsync() => await base.SaveChangesAsync();
 
         public async Task<List<Product>> SearchProductsByNameAsync(string searchText)

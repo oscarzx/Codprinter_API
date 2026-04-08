@@ -14,6 +14,7 @@ internal class CodprinterProductsContext(IOptions<DBOptions> options) : DbContex
     }
 
     public DbSet<Product> Products { get; set; }
+    public DbSet<ProductSite> ProductSites { get; set; }
 
     protected override void OnModelCreating(ModelBuilder modelBuilder)
     {

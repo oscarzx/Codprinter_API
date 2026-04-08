@@ -1,12 +1,17 @@
 ﻿namespace Codprinter.Products.Domain.ValueObjects;
 
-public class Endpoints
+public static class Endpoints
 {
     public const string CreateProduct = $"/{nameof(CreateProduct)}";
-    public const string UpdateProduct = $"/{nameof(UpdateProduct)}";
     public const string GetProductByCode = $"/{nameof(GetProductByCode)}";
-    public const string GetProductById = $"/{nameof(GetProductById)}";
-    public const string GetProductByName = $"/{nameof(GetProductByName)}";
     public const string GetAllProducts = $"/{nameof(GetAllProducts)}";
-    public const string DeleteProduct = $"/{nameof(DeleteProduct)}";
+    public const string UpdateProduct = $"/{nameof(UpdateProduct)}";
+    public const string GetProductByName = $"/{nameof(GetProductByName)}";
+
+    public const string CreateProductSite = $"/{nameof(CreateProductSite)}";
+    public const string GetAllProductSites = $"/{nameof(GetAllProductSites)}";
+    public const string SearchProductSitesByName = $"/{nameof(SearchProductSitesByName)}";
+    public const string GetProductSitesByCode = $"/{nameof(GetProductSitesByCode)}";
+    public const string UpdateProductSite = $"/{nameof(UpdateProductSite)}";
+    public const string DeleteProductSite = $"/{nameof(DeleteProductSite)}";
 }

@@ -34,7 +34,12 @@ namespace Codprinter.WebApi.Middlewares
                 logger.LogWarning("Product already exists exception occurred.");
                 await HandleExceptionAsync(context, "El producto ya existe.", HttpStatusCode.Conflict);
             }
-            catch(ProductNotFoundException ex)
+            catch (ProductSiteAlreadyExistException)
+            {
+                logger.LogWarning("Site already exists exception occurred.");
+                await HandleExceptionAsync(context, "La sede y producto ya existen.", HttpStatusCode.Conflict);
+            }
+            catch (ProductNotFoundException ex)
             {
                 logger.LogWarning(ex, "Product not found exception occurred.");
                 await HandleExceptionAsync(context, ex.Message, HttpStatusCode.NotFound);

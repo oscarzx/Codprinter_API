@@ -13,5 +13,14 @@ public interface ICodprinterProductsCommandsDataContext
     Task<List<Product>> SearchProductsByNameAsync(string searchText);
     Task UpdateProductAsync(Product product);
 
+    Task AddProductSiteAsync(ProductSite productSite);
+    Task<bool> ExistsProductSiteAsync(string site, string productCode);
+    Task<List<ProductSite>> GetAllProductSitesAsync();
+    Task<List<ProductSite>> SearchProductSitesByProductNameAsync(string searchText);
+    Task<List<ProductSite>> GetProductSitesByProductCodeAsync(string productCode);
+    Task<ProductSite?> GetProductSiteByIdAsync(Guid id);
+    Task UpdateProductSiteAsync(ProductSite productSite);
+    Task DeleteProductSiteAsync(ProductSite productSite);
+
     Task SaveChangesAsync();
 }
